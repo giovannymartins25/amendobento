@@ -1,0 +1,4 @@
+ALTER TABLE public.products
+  ADD COLUMN IF NOT EXISTS promo_price NUMERIC,
+  ADD COLUMN IF NOT EXISTS promo_ends_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS promo_units_total INTEGER;
