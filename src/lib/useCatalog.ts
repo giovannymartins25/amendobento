@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getCatalogOverrides, getTopProduct } from "./catalog.functions";
 import { computePromo, type PromoInfo } from "./promo";
 import { priceToNumber } from "./amendobento";
+import { resolveAssetUrl } from "./utils";
 
 export const formatBRL = (n: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n || 0);
@@ -64,7 +65,7 @@ export function useCatalogOverrides() {
       badge: effectiveBadge || undefined,
       emoji: o.emoji ?? item.emoji,
       story: o.story ?? (item as any).story,
-      image_url: o.image_url ?? (item as any).image_url ?? null,
+      image_url: resolveAssetUrl(o.image_url ?? (item as any).image_url ?? null) ?? null,
       items: o.items ?? null,
       promo,
     } as T & { promo?: PromoInfo | null };
@@ -115,7 +116,7 @@ export function useCatalogOverrides() {
           tags: [],
           story: o.story ?? "",
           badge: effectiveBadge,
-          image_url: o.image_url ?? null,
+          image_url: resolveAssetUrl(o.image_url) ?? null,
           promo,
         });
       } else {
@@ -128,7 +129,7 @@ export function useCatalogOverrides() {
           items: o.items ?? [],
           price: formatBRL(basePrice),
           badge: effectiveBadge,
-          image_url: o.image_url ?? null,
+          image_url: resolveAssetUrl(o.image_url) ?? null,
           promo,
         });
       }

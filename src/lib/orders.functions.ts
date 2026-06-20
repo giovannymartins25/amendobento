@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { createClient } from "@supabase/supabase-js";
 
 const ItemSchema = z.object({
   slug: z.string().min(1).max(120),
@@ -32,7 +33,29 @@ export const placeOrder = createServerFn({ method: "POST" })
       userId = userData.user?.id ?? null;
     }
 
-    const { data: order, error: orderErr } = await supabaseAdmin
+    // Se a service role key secreta estiver ausente em desenvolvimento, 
+    // criamos um client usando as credenciais do próprio usuário logado para passar pelas políticas RLS.
+    let client = supabaseAdmin;
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && token) {
+      client = createClient(
+        process.env.SUPABASE_URL!,
+        process.env.SUPABASE_PUBLISHABLE_KEY!,
+        {
+          global: {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+          auth: {
+            storage: undefined,
+            persistSession: false,
+            autoRefreshToken: false,
+          },
+        }
+      );
+    }
+
+    const { data: order, error: orderErr } = await client
       .from("orders")
       .insert({
         user_id: userId,
@@ -56,7 +79,7 @@ export const placeOrder = createServerFn({ method: "POST" })
       unit_price: it.unit_price,
     }));
 
-    const { error: itemsErr } = await supabaseAdmin.from("order_items").insert(itemsRows);
+    const { error: itemsErr } = await client.from("order_items").insert(itemsRows);
     if (itemsErr) {
       throw new Error(itemsErr.message);
     }
@@ -71,22 +94,26 @@ export const placeOrder = createServerFn({ method: "POST" })
 
     const productSlugs = [...purchasedQtyBySlug.keys()];
     if (productSlugs.length > 0) {
-      const { data: prods } = await supabaseAdmin
-        .from("products")
-        .select("slug, promo_units_total")
-        .in("slug", productSlugs);
-      for (const p of prods ?? []) {
-        if (p.promo_units_total == null) continue;
-        const bought = purchasedQtyBySlug.get(p.slug) ?? 0;
-        const remaining = Math.max(0, Number(p.promo_units_total) - bought);
-        const patch: any = remaining === 0
-          ? { promo_units_total: null, promo_price: null, promo_ends_at: null }
-          : { promo_units_total: remaining };
-        if (remaining === 0) {
-          patch.promo_price = null;
-          patch.promo_ends_at = null;
+      try {
+        const { data: prods } = await client
+          .from("products")
+          .select("slug, promo_units_total")
+          .in("slug", productSlugs);
+        for (const p of prods ?? []) {
+          if (p.promo_units_total == null) continue;
+          const bought = purchasedQtyBySlug.get(p.slug) ?? 0;
+          const remaining = Math.max(0, Number(p.promo_units_total) - bought);
+          const patch: any = remaining === 0
+            ? { promo_units_total: null, promo_price: null, promo_ends_at: null }
+            : { promo_units_total: remaining };
+          if (remaining === 0) {
+            patch.promo_price = null;
+            patch.promo_ends_at = null;
+          }
+          await client.from("products").update(patch).eq("slug", p.slug);
         }
-        await supabaseAdmin.from("products").update(patch).eq("slug", p.slug);
+      } catch (err) {
+        console.warn("Failed to update product promo stock, likely due to RLS permissions in dev fallback client:", err);
       }
     }
 

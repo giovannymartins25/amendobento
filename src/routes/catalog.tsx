@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Nav } from "@/components/Nav";
-import { CATALOG } from "@/lib/amendobento";
+import { CATALOG, KITS } from "@/lib/amendobento";
 import { store } from "@/lib/store";
 import { PackageBag } from "@/components/PackageBag";
 import { useCatalogOverrides, useTopProduct } from "@/lib/useCatalog";
@@ -42,6 +42,12 @@ function CatalogPage() {
     return list;
   }, [applyMany, extras, query, minIntensity, maxKcal, topSlug]);
 
+  const kits = applyMany(KITS);
+  const sabores = applyMany(CATALOG);
+  const promoSabores = sabores.filter((s: any) => s.promo);
+  const promoKits = kits.filter((k: any) => k.promo);
+  const promos = [...promoKits, ...promoSabores].slice(0, 4);
+
   async function addProduct(p: any) {
     if (!(await requireAuthOrRedirect())) return;
     store.addToCart(p.id, 1, "product", p?.promo?.unitsTotal ?? undefined);
@@ -62,31 +68,86 @@ function CatalogPage() {
           </div>
         </div>
 
-        {/* Atalhos para Kits e Promoções (movidos para dentro do catálogo) */}
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Link
-            to="/kits"
-            className="flex items-center justify-between rounded-2xl border border-gold-tint bg-surface-raised p-5 transition-all hover:-translate-y-0.5 hover:border-gold hover:shadow-gold"
-          >
+        {/* ── Kits em destaque (inline) ── */}
+        <section className="mt-10">
+          <div className="flex items-baseline justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gold">Combos curados</p>
-              <p className="mt-1 font-display text-lg font-semibold">Ver kits prontos</p>
-              <p className="mt-1 text-xs text-muted-foreground">Combinações pensadas para cada momento.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">Combos curados</p>
+              <h2 className="mt-1 font-display text-xl font-semibold md:text-2xl">Kits prontos</h2>
             </div>
-            <span className="text-gold">→</span>
-          </Link>
-          <Link
-            to="/promocoes"
-            className="flex items-center justify-between rounded-2xl border border-destructive/40 bg-surface-raised p-5 transition-all hover:-translate-y-0.5 hover:border-destructive"
-          >
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-destructive">Ofertas relâmpago</p>
-              <p className="mt-1 font-display text-lg font-semibold">Ver promoções</p>
-              <p className="mt-1 text-xs text-muted-foreground">Descontos por tempo ou quantidade limitada.</p>
+            <Link to="/kits" className="rounded-lg border border-gold px-4 py-2 text-xs font-semibold text-gold transition-all hover:bg-gold-tint">
+              Ver mais kits
+            </Link>
+          </div>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {kits.slice(0, 4).map((k) => (
+              <Link
+                key={k.id}
+                to="/kit/$id"
+                params={{ id: k.id }}
+                className="group flex flex-col rounded-2xl border border-border bg-surface-raised p-4 transition-all hover:-translate-y-0.5 hover:border-gold hover:shadow-gold"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-display text-sm font-semibold leading-tight">{k.name}</h3>
+                  {k.badge && (
+                    <span className="shrink-0 rounded-full bg-gold px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-primary-foreground">
+                      {k.badge}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1.5 flex-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                  {k.story}
+                </p>
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
+                  <span className="font-mono-coupon text-[9px] text-muted-foreground">{k.products.length} sabores</span>
+                  <span className="font-display text-sm font-bold text-gold">{k.price}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Promoções (inline, se houver) ── */}
+        {promos.length > 0 && (
+          <section className="mt-10">
+            <div className="flex items-baseline justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-destructive">Ofertas relâmpago</p>
+                <h2 className="mt-1 font-display text-xl font-semibold md:text-2xl">Promoções ativas</h2>
+              </div>
+              <Link to="/promocoes" className="rounded-lg border border-destructive/50 px-4 py-2 text-xs font-semibold text-destructive transition-all hover:bg-destructive/10">
+                Ver mais promoções
+              </Link>
             </div>
-            <span className="text-destructive">→</span>
-          </Link>
-        </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {promos.map((item: any) => {
+                const isKit = !!item.products;
+                const linkProps = isKit
+                  ? { to: "/kit/$id" as const, params: { id: item.id } }
+                  : { to: "/produto/$id" as const, params: { id: item.id } };
+                return (
+                  <Link
+                    key={item.id}
+                    {...linkProps}
+                    className="group flex flex-col rounded-2xl border border-destructive/30 bg-surface-raised p-4 transition-all hover:-translate-y-0.5 hover:border-destructive"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-display text-sm font-semibold">{item.name}</h3>
+                      <span className="shrink-0 rounded-full bg-destructive px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-white">
+                        −{item.promo.discountPct}%
+                      </span>
+                    </div>
+                    <div className="mt-2 border-t border-border pt-2">
+                      <PriceTag basePriceLabel={item.price} promo={item.promo} size="sm" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Filtros ── */}
 
         <div className="mt-8 grid gap-4 rounded-2xl border border-border bg-surface-raised p-5 md:grid-cols-3">
           <label className="flex flex-col gap-2">

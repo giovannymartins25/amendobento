@@ -1,5 +1,6 @@
 import packaging from "@/assets/packaging-amendobento.png";
 import type { Product } from "@/lib/amendobento";
+import { resolveAssetUrl } from "@/lib/utils";
 
 type Props = {
   product: Product;
@@ -11,7 +12,7 @@ type Props = {
  * Usa a foto da embalagem com overlay da cor do sabor + tag textual.
  */
 export function PackageBag({ product, className = "" }: Props) {
-  const src = product.image ?? packaging;
+  const src = resolveAssetUrl(product.image) ?? packaging;
   const isPhoto = !!product.image;
   return (
     <div

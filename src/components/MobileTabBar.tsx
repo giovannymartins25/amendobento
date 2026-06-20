@@ -1,10 +1,10 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, BookOpen, User, LogIn, ShoppingCart } from "lucide-react";
+import { Home, BookOpen, User, LogIn, ShoppingCart, Wine } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useAuth } from "@/hooks/use-auth";
 
-type TabTo = "/" | "/catalog" | "/cart" | "/login" | "/perfil";
-type Tab = { to: TabTo; label: string; Icon: typeof Home; badge?: boolean };
+type TabTo = "/" | "/catalog" | "/harmonizacao" | "/cart" | "/login" | "/perfil";
+type Tab = { to: TabTo; label: string; Icon: typeof Home; badge?: boolean; highlight?: boolean };
 
 export function MobileTabBar() {
   const { pathname } = useLocation();
@@ -14,6 +14,7 @@ export function MobileTabBar() {
   const TABS: Tab[] = [
     { to: "/", label: "Início", Icon: Home },
     { to: "/catalog", label: "Catálogo", Icon: BookOpen },
+    { to: "/harmonizacao", label: "Harmonizar", Icon: Wine, highlight: true },
     !loading && !user
       ? { to: "/login", label: "Entrar", Icon: LogIn }
       : { to: "/perfil", label: "Perfil", Icon: User },
@@ -35,7 +36,7 @@ export function MobileTabBar() {
               <Link
                 to={t.to}
                 className={`relative flex flex-col items-center gap-0.5 px-2 py-3 text-[10px] font-semibold transition-colors ${
-                  active ? "text-gold" : "text-muted-foreground hover:text-foreground"
+                  active ? "text-gold" : (t as any).highlight ? "text-gold/70" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Icon size={18} />

@@ -24,6 +24,7 @@ export function Nav() {
           {[
             { to: "/", label: "Início", exact: true },
             { to: "/catalog", label: "Catálogo" },
+            { to: "/harmonizacao", label: "✨ Harmonização", highlight: true },
             { to: "/clube", label: "Clube" },
             { to: "/quem-somos", label: "Quem somos" },
             { to: "/contato", label: "Contato" },
@@ -31,8 +32,12 @@ export function Nav() {
             <Link
               key={l.to}
               to={l.to}
-              activeOptions={l.exact ? { exact: true } : undefined}
-              className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:bg-surface-raised hover:text-foreground text-sm"
+              activeOptions={(l as any).exact ? { exact: true } : undefined}
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                (l as any).highlight
+                  ? "nav-highlight font-semibold hover:bg-gold-tint"
+                  : "text-muted-foreground hover:bg-surface-raised hover:text-foreground"
+              }`}
               activeProps={{ className: "rounded-md px-3 py-1.5 text-sm text-gold bg-gold-tint" }}
             >
               {l.label}

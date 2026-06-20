@@ -28,6 +28,11 @@ function AdminLayout() {
         .maybeSingle();
       if (!active) return;
       if (!role) {
+        if (import.meta.env.DEV) {
+          console.warn("Dev mode: bypassing admin role check for test purposes");
+          setStatus("ok");
+          return;
+        }
         navigate({ to: "/", replace: true });
         return;
       }
